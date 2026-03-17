@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@theme {
+  /* Aquí defines tu paleta personalizada */
+  --color-pastel-pink: #fff0f5;
+  --color-soft-rose: #fbce8a;
+  
+  /* Puedes extender o modificar fuentes también */
+  --font-serif: "Playfair Display", serif;
+}
