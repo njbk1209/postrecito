@@ -5,7 +5,7 @@ import './index.css'
 import App from './App.jsx'
 import { CartProvider } from './context/CartContext.jsx'
 import { Toaster } from 'react-hot-toast';
-import { SpeedInsights } from '@vercel/speed-insights/next';
+import { SpeedInsights } from "@vercel/speed-insights/react"
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
