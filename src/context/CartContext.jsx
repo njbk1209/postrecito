@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from 'react';
 import React from 'react';
+import toast from 'react-hot-toast';
 
 const CartContext = createContext();
 
@@ -16,6 +17,7 @@ export const CartProvider = ({ children }) => {
       }
       return [...prev, { ...product, qty: 1 }];
     });
+    toast.success(`😋 ¡${product.name} agregado al carrito!`)
   };
 
   const updateQuantity = (id, amount) => {
