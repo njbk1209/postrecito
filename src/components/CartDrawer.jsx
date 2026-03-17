@@ -40,19 +40,21 @@ export default function CartDrawer({ isOpen, setIsOpen }) {
                 icon: '🍰',
             });
 
+            setCart([]);
+
             // 3. Delay de 2 segundos (2000ms) usando una promesa
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             // 4. Abrir WhatsApp y cerrar el drawer
             window.open(`https://wa.me/584245305968?text=${mensaje}`, '_blank');
+
+
             setIsOpen(false);
 
         } catch (error) {
             toast.error("Error al conectar con el servidor, Serás redirigido al Whatasapp corporativo para finalizar la compra.");
             window.open(`https://wa.me/584245305968?text=${mensaje}`, '_blank');
         } finally {
-            // 5. Vaciar el carrito y quitar el estado de carga
-            setCart([]);
             setLoading(false);
         }
     };
@@ -166,10 +168,24 @@ export default function CartDrawer({ isOpen, setIsOpen }) {
                                                     />
                                                     <button
                                                         type="submit"
-                                                        className="w-full bg-rose-500 hover:bg-rose-600 text-white py-4 rounded-full font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-200"
+                                                        disabled={loading || cart.length === 0} // Deshabilitado si carga o no hay items
+                                                        className={`w-full py-4 rounded-full font-bold transition-all flex items-center justify-center gap-2 shadow-lg 
+                                                            ${loading
+                                                                ? 'bg-gray-400 cursor-not-allowed'
+                                                                : 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-200'
+                                                            }`}
                                                     >
-                                                        <MessageCircle className="w-5 h-5" />
-                                                        {loading ? 'Procesando...' : 'Realizar pedido   '}
+                                                        {loading ? (
+                                                            <>
+                                                                <span className="animate-spin mr-2">⏳</span>
+                                                                Procesando pedido...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <MessageCircle className="w-5 h-5" />
+                                                                Pedir por WhatsApp
+                                                            </>
+                                                        )}
                                                     </button>
                                                 </form>
                                             </div>
