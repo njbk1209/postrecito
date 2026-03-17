@@ -48,12 +48,12 @@ const ProductList = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-      <div className="flex flex-col lg:flex-row gap-10">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+      <div className="flex flex-col lg:flex-row">
         
         {/* SIDEBAR (LG+) */}
         <aside className="hidden lg:block w-64 shrink-0">
-          <h3 className="text-xs uppercase tracking-[0.2em] text-gray-400 font-bold mb-6">Categorías</h3>
+          <h3 className="text-sm uppercase tracking-[0.2em] text-gray-400 font-bold mb-6">Categorías</h3>
           <ul className="space-y-4">
             {categories.map(cat => (
               <li key={cat}>
@@ -75,7 +75,7 @@ const ProductList = () => {
         {/* CONTENIDO PRINCIPAL */}
         <div className="flex-1">
           <div className="mb-6 lg:mb-10">
-            <h2 className="text-3xl font-semibold text-gray-800 font-serif">Nuestro Catálogo</h2>
+            <h2 className="text-3xl font-semibold text-rose-800 font-serif">Nuestro Catálogo</h2>
             <div className="h-1 w-12 bg-rose-300 mt-2"></div>
           </div>
 

@@ -2,7 +2,7 @@ import React from 'react'
 
 const Hero = () => (
   <section className="bg-rose-50 py-16 px-6 text-center">
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <h1 className="text-4xl md:text-5xl font-serif font-light text-rose-800 mb-4">
         Momentos Dulces, <span className="italic">Hechos con Amor</span>
       </h1>
