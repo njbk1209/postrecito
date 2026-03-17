@@ -2,6 +2,7 @@ import React, { Fragment, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { X, ShoppingBag, Trash2, MessageCircle } from 'lucide-react'
 import { useCart } from '../context/CartContext'
+import toast from 'react-hot-toast';
 
 export default function CartDrawer({ isOpen, setIsOpen }) {
     const { cart, total, removeFromCart, updateQuantity, setCart } = useCart();
@@ -12,22 +13,53 @@ export default function CartDrawer({ isOpen, setIsOpen }) {
         e.preventDefault();
         setLoading(true);
 
-        const listaProductos = cart.map(item => `• ${item.qty}x ${item.name}`).join('%0A');
-        const mensaje = `*Nuevo Pedido - Postrecito* 🍰%0A%0A*Cliente:* ${form.nombre}%0A*WhatsApp:* ${form.whatsapp}%0A%0A*Detalle:*%0A${listaProductos}%0A%0A*Total a pagar:* $${total}%0A%0A_Enviado desde la web_`;
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXL_cm-daDemRxlGKbWcuJAg3XO67hZJZMxaLYaS6_WpMzZRcxRh04DJaYOg9m0CF17A/exec";
 
-        // 1. Registro en Google Sheets (Opcional pero recomendado)
+        const listaProductosWA = cart.map(item => `• ${item.qty}x ${item.name}`).join('%0A');
+        const mensaje = `*Nuevo Pedido - Postrecito* 🍰%0A%0A*Cliente:* ${form.nombre}%0A*WhatsApp:* ${form.whatsapp}%0A%0A*Detalle:*%0A${listaProductosWA}%0A%0A*Total a pagar:* $${total}%0A%0A_Enviado desde la web_`;
+
+        const dataToSend = {
+            nombre: form.nombre,
+            whatsapp: form.whatsapp,
+            cart: cart,
+            order_total: total
+        };
+
         try {
-            await fetch('/api/orders', { method: 'POST', body: JSON.stringify({ ...form, cart }) });
-        } catch (e) { console.error(e) }
+            // 1. Enviamos a Google Sheets
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataToSend)
+            });
 
-        // 2. WhatsApp Directo
-        window.open(`https://wa.me/58412XXXXXXX?text=${mensaje}`, '_blank');
-        setLoading(false);
+            // 2. Mostramos el Toast de éxito
+            toast.success("¡Pedido registrado! Abriendo WhatsApp...", {
+                duration: 4000, // Que dure un poco más en pantalla
+                icon: '🍰',
+            });
+
+            // 3. Delay de 2 segundos (2000ms) usando una promesa
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // 4. Abrir WhatsApp y cerrar el drawer
+            window.open(`https://wa.me/584245305968?text=${mensaje}`, '_blank');
+            setIsOpen(false);
+
+        } catch (error) {
+            toast.error("Error al conectar con el servidor, Serás redirigido al Whatasapp corporativo para finalizar la compra.");
+            window.open(`https://wa.me/584245305968?text=${mensaje}`, '_blank');
+        } finally {
+            // 5. Vaciar el carrito y quitar el estado de carga
+            setCart([]);
+            setLoading(false);
+        }
     };
 
     return (
         <Transition.Root show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-[100]" onClose={setIsOpen}>
+            <Dialog as="div" className="relative z-100" onClose={setIsOpen}>
                 <Transition.Child
                     as={Fragment}
                     enter="ease-in-out duration-500"
@@ -71,7 +103,7 @@ export default function CartDrawer({ isOpen, setIsOpen }) {
                                                     <ul className="divide-y divide-rose-50">
                                                         {cart.map((product) => (
                                                             <li key={product.id} className="flex py-6 items-center gap-4">
-                                                                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-rose-100">
+                                                                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md border border-rose-100">
                                                                     <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
                                                                 </div>
 
@@ -137,7 +169,7 @@ export default function CartDrawer({ isOpen, setIsOpen }) {
                                                         className="w-full bg-rose-500 hover:bg-rose-600 text-white py-4 rounded-full font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-200"
                                                     >
                                                         <MessageCircle className="w-5 h-5" />
-                                                        {loading ? 'Procesando...' : 'Pedir por WhatsApp'}
+                                                        {loading ? 'Procesando...' : 'Realizar pedido   '}
                                                     </button>
                                                 </form>
                                             </div>
