@@ -6,6 +6,7 @@ import App from './App.jsx'
 import { CartProvider } from './context/CartContext.jsx'
 import { Toaster } from 'react-hot-toast';
 import { SpeedInsights } from "@vercel/speed-insights/react"
+import { Analytics } from "@vercel/analytics/react";
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -18,7 +19,8 @@ createRoot(document.getElementById('root')).render(
           },
         }}
       />
-      <SpeedInsights />
     </CartProvider>
+    <Analytics />
+    <SpeedInsights />
   </StrictMode>,
 )
