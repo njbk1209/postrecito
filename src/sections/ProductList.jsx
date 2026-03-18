@@ -95,6 +95,21 @@ const ProductList = () => {
           </aside>
 
           <div className="flex-1">
+            {/* CATEGORÍAS MOBILE (BADGES) */}
+            <div className="lg:hidden mb-8 -mx-4 px-4 overflow-x-auto flex flex-nowrap gap-2 no-scrollbar">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 border ${activeCategory === cat
+                      ? "bg-rose-500 text-white border-rose-500 shadow-sm"
+                      : "bg-white text-rose-400 border-rose-100 hover:border-rose-300"
+                    }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
             <div className="mb-6 lg:mb-10">
               <h2 className="text-3xl font-semibold text-rose-800 font-serif">Nuestro Catálogo</h2>
               <div className="h-1 w-12 bg-rose-300 mt-2"></div>
