@@ -10,12 +10,16 @@ export const CurrencyProvider = ({ children }) => {
   const isBS = currency === 'BS';
 
   const exchangeRate = useMemo(() => {
+    const parsePrice = (val) => parseFloat(String(val).replace(',', '.')) || 0;
     const valid = products.filter(
-      p => parseFloat(p.price) > 0 && parseFloat(p.price_bs) > 0
+      p => parsePrice(p.price) > 0 && parsePrice(p.price_bs) > 0
     );
     if (valid.length === 0) return null;
-    const sum = valid.reduce((acc, p) => acc + parseFloat(p.price_bs) / parseFloat(p.price), 0);
-    return Math.round(sum / valid.length);
+    const sum = valid.reduce((acc, p) => {
+      return acc + (parsePrice(p.price_bs) / parsePrice(p.price));
+    }, 0);
+    const averageRate = sum / valid.length;
+    return averageRate;
   }, [products]);
 
   return (

@@ -9,10 +9,10 @@ const ProductCard = ({ id, name, price, compare_price, price_bs, compare_price_b
   const isOutOfStock = stock <= 0;
 
   // Normalizar todos los precios a número para evitar comparaciones string/number
-  const priceNum           = parseFloat(price)            || 0;
-  const comparePriceNum    = parseFloat(compare_price)    || null;
-  const priceBsNum         = parseFloat(price_bs)         || 0;
-  const comparePriceBsNum  = parseFloat(compare_price_bs) || null;
+  const priceNum = parseFloat(String(price).replace(',', '.')) || 0;
+  const comparePriceNum = compare_price ? parseFloat(String(compare_price).replace(',', '.')) : null;
+  const priceBsNum = parseFloat(String(price_bs).replace(',', '.')) || 0;
+  const comparePriceBsNum = compare_price_bs ? parseFloat(String(compare_price_bs).replace(',', '.')) : null;
 
   const isNew = () => {
     if (!date_added) return false;
@@ -23,9 +23,9 @@ const ProductCard = ({ id, name, price, compare_price, price_bs, compare_price_b
   };
 
   // Precios activos según moneda seleccionada
-  const activePrice        = isBS ? priceBsNum        : priceNum;
+  const activePrice = isBS ? priceBsNum : priceNum;
   const activeComparePrice = isBS ? comparePriceBsNum : comparePriceNum;
-  const symbol             = isBS ? 'Bs' : '€';
+  const symbol = isBS ? 'Bs' : '€';
 
   const discount = activeComparePrice && activeComparePrice > activePrice
     ? Math.round(((activeComparePrice - activePrice) / activeComparePrice) * 100)
@@ -81,7 +81,8 @@ const ProductCard = ({ id, name, price, compare_price, price_bs, compare_price_b
 
         <button
           disabled={isOutOfStock}
-          onClick={() => addToCart({ id, name,
+          onClick={() => addToCart({
+            id, name,
             price: priceNum, compare_price: comparePriceNum,
             price_bs: priceBsNum, compare_price_bs: comparePriceBsNum,
             image, stock
