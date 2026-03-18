@@ -1,9 +1,18 @@
 import React from 'react'
 import { useCart } from '../context/CartContext'
+import { useCurrency } from '../context/CurrencyContext'
 
-const ProductCard = ({ id, name, price, compare_price, image, category, stock, date_added }) => {
+const ProductCard = ({ id, name, price, compare_price, price_bs, compare_price_bs, image, category, stock, date_added }) => {
   const { addToCart } = useCart();
+  const { isBS } = useCurrency();
+
   const isOutOfStock = stock <= 0;
+
+  // Normalizar todos los precios a número para evitar comparaciones string/number
+  const priceNum           = parseFloat(price)            || 0;
+  const comparePriceNum    = parseFloat(compare_price)    || null;
+  const priceBsNum         = parseFloat(price_bs)         || 0;
+  const comparePriceBsNum  = parseFloat(compare_price_bs) || null;
 
   const isNew = () => {
     if (!date_added) return false;
@@ -13,13 +22,18 @@ const ProductCard = ({ id, name, price, compare_price, image, category, stock, d
     return diffDays <= 7;
   };
 
-  const discount = compare_price && compare_price > price
-    ? Math.round(((compare_price - price) / compare_price) * 100)
+  // Precios activos según moneda seleccionada
+  const activePrice        = isBS ? priceBsNum        : priceNum;
+  const activeComparePrice = isBS ? comparePriceBsNum : comparePriceNum;
+  const symbol             = isBS ? 'Bs' : '€';
+
+  const discount = activeComparePrice && activeComparePrice > activePrice
+    ? Math.round(((activeComparePrice - activePrice) / activeComparePrice) * 100)
     : null;
 
   return (
     <div className={`group bg-white rounded-2xl overflow-hidden shadow-sm border border-rose-100 transition-all duration-300 relative ${isOutOfStock ? 'opacity-75 grayscale-[0.5]' : 'hover:shadow-md'}`}>
-      
+
       {/* Badges esquina superior derecha */}
       <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
         {isNew() && !isOutOfStock && (
@@ -34,7 +48,7 @@ const ProductCard = ({ id, name, price, compare_price, image, category, stock, d
         )}
       </div>
 
-      <div className="aspect-square overflow-hidden bg-rose-100 relative">
+      <div className="aspect-square overflow-hidden bg-white relative">
         <img
           src={image}
           alt={name}
@@ -55,18 +69,26 @@ const ProductCard = ({ id, name, price, compare_price, image, category, stock, d
 
         {/* Precios */}
         <div className="mt-2 flex items-center justify-center gap-2">
-          <p className="text-rose-500 font-semibold">{price}€</p>
-          {discount && (
-            <p className="text-gray-400 text-sm line-through">{compare_price}€</p>
+          <p className="text-rose-500 font-semibold">
+            {activePrice ? `${activePrice} ${symbol}` : '—'}
+          </p>
+          {discount && activeComparePrice && (
+            <p className="text-gray-400 text-sm line-through">
+              {activeComparePrice} {symbol}
+            </p>
           )}
         </div>
-        
-        <button 
+
+        <button
           disabled={isOutOfStock}
-          onClick={() => addToCart({ id, name, price, image, stock })}
+          onClick={() => addToCart({ id, name,
+            price: priceNum, compare_price: comparePriceNum,
+            price_bs: priceBsNum, compare_price_bs: comparePriceBsNum,
+            image, stock
+          })}
           className={`mt-4 w-full py-2 rounded-lg text-sm font-medium transition-all duration-75 active:scale-95 
-            ${isOutOfStock 
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200' 
+            ${isOutOfStock
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
               : 'border border-rose-200 text-rose-400 hover:bg-rose-50'}`}
         >
           {isOutOfStock ? 'No disponible' : 'Agregar al Carrito'}
@@ -76,4 +98,4 @@ const ProductCard = ({ id, name, price, compare_price, image, category, stock, d
   )
 }
 
-export default ProductCard;
+export default ProductCard

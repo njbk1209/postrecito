@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ProductCard from "../components/ProductCard";
 import Papa from 'papaparse';
 import { Transition } from '@headlessui/react'
+import { useCurrency } from '../context/CurrencyContext';
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
@@ -11,18 +12,16 @@ const ProductList = () => {
   const itemsPerPage = 12;
   const catalogTopRef = useRef(null);
 
+  const { setProducts: setProductsInContext } = useCurrency();
+
   const SHEET_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     if (!loading && catalogTopRef.current) {
-      const yOffset = -40; // ajuste extra
+      const yOffset = -40;
       const element = catalogTopRef.current;
       const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-
-      window.scrollTo({
-        top: y,
-        behavior: 'smooth'
-      });
+      window.scrollTo({ top: y, behavior: 'smooth' });
     }
   }, [currentPage]);
 
@@ -37,6 +36,7 @@ const ProductList = () => {
           skipEmptyLines: true,
           complete: (results) => {
             setProducts(results.data);
+            setProductsInContext(results.data); // 👈 alimenta la tasa
             setLoading(false);
           },
         });
@@ -48,26 +48,19 @@ const ProductList = () => {
     fetchData();
   }, []);
 
-  // Resetear a página 1 cuando cambie la categoría
   useEffect(() => {
     setCurrentPage(1);
   }, [activeCategory]);
 
   const categories = ["Todos", ...new Set(products.map(p => p.category).filter(Boolean))];
 
-  // 1. Filtrar primero
   const filteredProducts = activeCategory === "Todos"
     ? products
     : products.filter(p => p.category === activeCategory);
 
-  // 2. Calcular índices de paginación
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-
-  // 3. Cortar el array para mostrar solo los de la página actual
   const currentProducts = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
-
-  // 4. Calcular total de páginas
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
   if (loading) return <div className="py-20 text-center text-rose-400 animate-pulse font-serif">Cargando dulzura...</div>;
@@ -92,8 +85,7 @@ const ProductList = () => {
                 <li key={cat}>
                   <button
                     onClick={() => setActiveCategory(cat)}
-                    className={`text-sm transition-all duration-300 ${activeCategory === cat ? "text-rose-500 font-semibold translate-x-2" : "text-gray-500 hover:text-rose-400"
-                      }`}
+                    className={`text-sm transition-all duration-300 ${activeCategory === cat ? "text-rose-500 font-semibold translate-x-2" : "text-gray-500 hover:text-rose-400"}`}
                   >
                     {cat}
                   </button>
@@ -108,14 +100,12 @@ const ProductList = () => {
               <div className="h-1 w-12 bg-rose-300 mt-2"></div>
             </div>
 
-            {/* Grid de Productos (usamos currentProducts) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 lg-gap-8">
               {currentProducts.map(product => (
                 <ProductCard key={product.id} {...product} />
               ))}
             </div>
 
-            {/* --- CONTROLES DE PAGINACIÓN --- */}
             {totalPages > 1 && (
               <div className="mt-12 flex justify-center items-center gap-4">
                 <button
@@ -131,10 +121,7 @@ const ProductList = () => {
                     <button
                       key={i}
                       onClick={() => setCurrentPage(i + 1)}
-                      className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${currentPage === i + 1
-                        ? "bg-rose-400 text-white shadow-md"
-                        : "text-rose-400 hover:bg-rose-50"
-                        }`}
+                      className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${currentPage === i + 1 ? "bg-rose-400 text-white shadow-md" : "text-rose-400 hover:bg-rose-50"}`}
                     >
                       {i + 1}
                     </button>

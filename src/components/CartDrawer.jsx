@@ -2,12 +2,21 @@ import React, { Fragment, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { X, ShoppingBag, Trash2, MessageCircle } from 'lucide-react'
 import { useCart } from '../context/CartContext'
+import { useCurrency } from '../context/CurrencyContext'
 import toast from 'react-hot-toast';
 
 export default function CartDrawer({ isOpen, setIsOpen }) {
-    const { cart, total, removeFromCart, updateQuantity, setCart } = useCart();
+    const { cart, getTotal, removeFromCart, updateQuantity, setCart } = useCart();
+    const { currency, isBS } = useCurrency();
     const [form, setForm] = useState({ nombre: '', whatsapp: '' });
     const [loading, setLoading] = useState(false);
+
+    const total    = getTotal(currency);
+    const symbol   = isBS ? 'Bs' : '€';
+
+    // Precio unitario y subtotal según moneda activa
+    const unitPrice = (item) => isBS ? item.price_bs : item.price;
+    const subtotal  = (item) => ((unitPrice(item) ?? 0) * item.qty).toFixed(2);
 
     const handleCheckout = async (e) => {
         e.preventDefault();
@@ -15,18 +24,21 @@ export default function CartDrawer({ isOpen, setIsOpen }) {
 
         const SCRIPT_URL = import.meta.env.VITE_SCRIPT_URL;
 
-        const listaProductosWA = cart.map(item => `•ID:(${item.id}) - ${item.qty}x ${item.name}`).join('%0A');
-        const mensaje = `*Nuevo Pedido - Postrecito* 🍰%0A%0A*Cliente:* ${form.nombre}%0A*WhatsApp:* ${form.whatsapp}%0A%0A*Detalle:*%0A${listaProductosWA}%0A%0A*Total a pagar:* $${total}%0A%0A_Enviado desde la web_`;
+        const listaProductosWA = cart
+            .map(item => `•ID:(${item.id}) - ${item.qty}x ${item.name}`)
+            .join('%0A');
+
+        const mensaje = `*Nuevo Pedido - Postrecito* 🍰%0A%0A*Cliente:* ${form.nombre}%0A*WhatsApp:* ${form.whatsapp}%0A%0A*Detalle:*%0A${listaProductosWA}%0A%0A*Total a pagar:* ${total.toFixed(2)} ${symbol}%0A%0A_Enviado desde la web_`;
 
         const dataToSend = {
             nombre: form.nombre,
             whatsapp: form.whatsapp,
-            cart: cart,
+            cart,
+            currency,
             order_total: total
         };
 
         try {
-            // 1. Enviamos a Google Sheets
             await fetch(SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
@@ -34,25 +46,20 @@ export default function CartDrawer({ isOpen, setIsOpen }) {
                 body: JSON.stringify(dataToSend)
             });
 
-            // 2. Mostramos el Toast de éxito
             toast.success("¡Pedido registrado! Abriendo WhatsApp...", {
-                duration: 4000, // Que dure un poco más en pantalla
+                duration: 4000,
                 icon: '🍰',
             });
 
             setCart([]);
 
-            // 3. Delay de 2 segundos (2000ms) usando una promesa
             await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // 4. Abrir WhatsApp y cerrar el drawer
             window.open(`https://wa.me/584245305968?text=${mensaje}`, '_blank');
-
-
             setIsOpen(false);
 
         } catch (error) {
-            toast.error("Error al conectar con el servidor, Serás redirigido al Whatasapp corporativo para finalizar la compra.");
+            toast.error("Error al conectar con el servidor, Serás redirigido al WhatsApp corporativo para finalizar la compra.");
             window.open(`https://wa.me/584245305968?text=${mensaje}`, '_blank');
         } finally {
             setLoading(false);
@@ -111,7 +118,9 @@ export default function CartDrawer({ isOpen, setIsOpen }) {
 
                                                                 <div className="flex-1">
                                                                     <h4 className="font-medium text-gray-800 text-sm">{product.name}</h4>
-                                                                    <p className="text-xs text-rose-400 mb-2 font-light">Unitario: ${product.price}</p>
+                                                                    <p className="text-xs text-rose-400 mb-2 font-light">
+                                                                        Unitario: {unitPrice(product)} {symbol}
+                                                                    </p>
 
                                                                     {/* Controles de Cantidad */}
                                                                     <div className="flex items-center gap-3">
@@ -134,7 +143,9 @@ export default function CartDrawer({ isOpen, setIsOpen }) {
                                                                 </div>
 
                                                                 <div className="flex flex-col items-end gap-2">
-                                                                    <p className="font-medium text-rose-600">${(product.price * product.qty).toFixed(2)}</p>
+                                                                    <p className="font-medium text-rose-600">
+                                                                        {subtotal(product)} {symbol}
+                                                                    </p>
                                                                     <button onClick={() => removeFromCart(product.id)} className="text-rose-300 hover:text-rose-500 transition-colors">
                                                                         <Trash2 className="w-4 h-4" />
                                                                     </button>
@@ -150,7 +161,7 @@ export default function CartDrawer({ isOpen, setIsOpen }) {
                                             <div className="border-t border-rose-100 px-6 py-6 bg-rose-50/50">
                                                 <div className="flex justify-between text-xl font-serif text-rose-900 mb-6">
                                                     <p>Total Estimado</p>
-                                                    <p>${total}</p>
+                                                    <p>{total.toFixed(2)} {symbol}</p>
                                                 </div>
 
                                                 <form onSubmit={handleCheckout} className="space-y-3">
@@ -168,7 +179,7 @@ export default function CartDrawer({ isOpen, setIsOpen }) {
                                                     />
                                                     <button
                                                         type="submit"
-                                                        disabled={loading || cart.length === 0} // Deshabilitado si carga o no hay items
+                                                        disabled={loading || cart.length === 0}
                                                         className={`w-full py-4 rounded-full font-bold transition-all flex items-center justify-center gap-2 shadow-lg 
                                                             ${loading
                                                                 ? 'bg-gray-400 cursor-not-allowed'

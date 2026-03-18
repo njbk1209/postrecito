@@ -1,13 +1,51 @@
 import React, { useState } from 'react'
 import { useCart } from '../context/CartContext'
+import { useCurrency } from '../context/CurrencyContext'
 import CartDrawer from './CartDrawer'
+
+const CurrencyToggle = () => {
+  const { currency, setCurrency } = useCurrency();
+
+  return (
+    <div className="flex items-center bg-rose-50 border border-rose-100 rounded-full p-0.5 text-xs font-semibold uppercase tracking-wider">
+      <button
+        onClick={() => setCurrency('EUR')}
+        className={`px-3 py-1 rounded-full transition-all duration-200 ${
+          currency === 'EUR'
+            ? 'bg-rose-400 text-white shadow-sm'
+            : 'text-rose-300 hover:text-rose-400'
+        }`}
+      >
+        Euro BCV
+      </button>
+      <button
+        onClick={() => setCurrency('BS')}
+        className={`px-3 py-1 rounded-full transition-all duration-200 ${
+          currency === 'BS'
+            ? 'bg-rose-400 text-white shadow-sm'
+            : 'text-rose-300 hover:text-rose-400'
+        }`}
+      >
+        Bolivares
+      </button>
+    </div>
+  );
+};
 
 const Navbar = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const { cart } = useCart(); // Para obtener la cantidad real
+  const { cart } = useCart();
+  const { exchangeRate } = useCurrency();
 
   return (
     <>
+      {/* Barra de tasa del día */}
+      {exchangeRate && (
+        <div className="w-full bg-rose-500 text-white text-xs text-center py-1.5 tracking-wide font-medium">
+          💱 Tasa del día: <span className="font-bold">1 € = {exchangeRate.toLocaleString('es-VE')} Bs</span>
+        </div>
+      )}
+
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-rose-100 px-6 py-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="text-2xl font-serif font-semibold text-rose-500 tracking-tight cursor-pointer">
@@ -20,8 +58,9 @@ const Navbar = () => {
             <a href="#nosotros" className="hover:text-rose-400 transition-colors">Nosotros</a>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button 
+          <div className="flex items-center gap-3">
+            <CurrencyToggle />
+            <button
               onClick={() => setIsCartOpen(true)}
               className="p-2 text-gray-500 hover:text-rose-400 transition-colors relative"
             >
@@ -38,7 +77,6 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* El Drawer se renderiza fuera del nav para evitar problemas de z-index */}
       <CartDrawer isOpen={isCartOpen} setIsOpen={setIsCartOpen} />
     </>
   )
