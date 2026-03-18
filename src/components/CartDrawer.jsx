@@ -13,9 +13,9 @@ export default function CartDrawer({ isOpen, setIsOpen }) {
         e.preventDefault();
         setLoading(true);
 
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXL_cm-daDemRxlGKbWcuJAg3XO67hZJZMxaLYaS6_WpMzZRcxRh04DJaYOg9m0CF17A/exec";
+        const SCRIPT_URL = import.meta.env.VITE_SCRIPT_URL;
 
-        const listaProductosWA = cart.map(item => `• ${item.qty}x ${item.name}`).join('%0A');
+        const listaProductosWA = cart.map(item => `•ID:(${item.id}) - ${item.qty}x ${item.name}`).join('%0A');
         const mensaje = `*Nuevo Pedido - Postrecito* 🍰%0A%0A*Cliente:* ${form.nombre}%0A*WhatsApp:* ${form.whatsapp}%0A%0A*Detalle:*%0A${listaProductosWA}%0A%0A*Total a pagar:* $${total}%0A%0A_Enviado desde la web_`;
 
         const dataToSend = {
