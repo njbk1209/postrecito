@@ -1,69 +1,75 @@
+// ProductList.jsx
+
 import React, { useState, useEffect, useRef } from 'react';
 import ProductCard from "../components/ProductCard";
-import Papa from 'papaparse';
-import { Transition } from '@headlessui/react'
-import { useCurrency } from '../context/CurrencyContext';
+import { Transition } from '@headlessui/react';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const ProductList = () => {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts]           = useState([]);
   const [activeCategory, setActiveCategory] = useState("Todos");
-  const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
-  const catalogTopRef = useRef(null);
-
-  const { setProducts: setProductsInContext } = useCurrency();
-
-  const SHEET_URL = import.meta.env.VITE_API_URL;
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState(null);
+  const [currentPage, setCurrentPage]     = useState(1);
+  const [totalPages, setTotalPages]       = useState(1);
+  const catalogTopRef                     = useRef(null);
 
   useEffect(() => {
     if (!loading && catalogTopRef.current) {
-      const yOffset = -40;
-      const element = catalogTopRef.current;
-      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      const y = catalogTopRef.current.getBoundingClientRect().top + window.pageYOffset - 40;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
   }, [currentPage]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const response = await fetch(SHEET_URL);
-        const csv = await response.text();
+        const params = new URLSearchParams();
+        params.append('page', currentPage);
+        if (activeCategory !== 'Todos') params.append('category', activeCategory);
 
-        Papa.parse(csv, {
-          header: true,
-          skipEmptyLines: true,
-          complete: (results) => {
-            setProducts(results.data);
-            setProductsInContext(results.data); // 👈 alimenta la tasa
-            setLoading(false);
-          },
-        });
-      } catch (error) {
-        console.error("Error:", error);
+        const res = await fetch(`${API_URL}/api/products/?${params}`);
+        if (!res.ok) throw new Error('Error al cargar productos');
+
+        const data = await res.json();
+        setProducts(data.results);
+        setTotalPages(Math.ceil(data.count / 15)); // PAGE_SIZE de tu settings.py
+      } catch (err) {
+        setError(err.message);
+      } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
+
+    fetchProducts();
+  }, [currentPage, activeCategory]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [activeCategory]);
 
-  const categories = ["Todos", ...new Set(products.map(p => p.category).filter(Boolean))];
+  // Las categorías las pedimos una sola vez al montar
+  const [categories, setCategories] = useState(['Todos']);
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res  = await fetch(`${API_URL}/api/products/?page=1`);
+        const data = await res.json();
+        const cats = [...new Set(data.results.map(p => p.category).filter(Boolean))];
+        setCategories(['Todos', ...cats]);
+      } catch (_) {}
+    };
+    fetchCategories();
+  }, []);
 
-  const filteredProducts = activeCategory === "Todos"
-    ? products
-    : products.filter(p => p.category === activeCategory);
-
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentProducts = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-
-  if (loading) return <div className="py-20 text-center text-rose-400 animate-pulse font-serif">Cargando dulzura...</div>;
+  if (error) return (
+    <div className="py-20 text-center text-rose-400 font-serif">
+      {error}
+    </div>
+  );
 
   return (
     <Transition
@@ -72,20 +78,26 @@ const ProductList = () => {
       enter="transition-opacity duration-500"
       enterFrom="opacity-0"
       enterTo="opacity-100"
-      key={currentPage}>
-
+      key={currentPage}
+    >
       <div ref={catalogTopRef} className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
         <div className="flex flex-col lg:flex-row">
 
           {/* SIDEBAR */}
           <aside className="hidden lg:block w-64 shrink-0">
-            <h3 className="text-sm uppercase tracking-[0.2em] text-gray-400 font-bold mb-6">Categorías</h3>
+            <h3 className="text-sm uppercase tracking-[0.2em] text-gray-400 font-bold mb-6">
+              Categorías
+            </h3>
             <ul className="space-y-4">
               {categories.map(cat => (
                 <li key={cat}>
                   <button
                     onClick={() => setActiveCategory(cat)}
-                    className={`text-sm transition-all duration-300 ${activeCategory === cat ? "text-rose-500 font-semibold translate-x-2" : "text-gray-500 hover:text-rose-400"}`}
+                    className={`text-sm transition-all duration-300 ${
+                      activeCategory === cat
+                        ? "text-rose-500 font-semibold translate-x-2"
+                        : "text-gray-500 hover:text-rose-400"
+                    }`}
                   >
                     {cat}
                   </button>
@@ -95,31 +107,39 @@ const ProductList = () => {
           </aside>
 
           <div className="flex-1">
-            {/* CATEGORÍAS MOBILE (BADGES) */}
+            {/* CATEGORÍAS MOBILE */}
             <div className="lg:hidden mb-8 -mx-4 px-4 overflow-x-auto flex flex-nowrap gap-2 no-scrollbar">
               {categories.map(cat => (
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
-                  className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 border ${activeCategory === cat
+                  className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 border ${
+                    activeCategory === cat
                       ? "bg-rose-500 text-white border-rose-500 shadow-sm"
                       : "bg-white text-rose-400 border-rose-100 hover:border-rose-300"
-                    }`}
+                  }`}
                 >
                   {cat}
                 </button>
               ))}
             </div>
+
             <div className="mb-6 lg:mb-10">
               <h2 className="text-3xl font-semibold text-rose-800 font-serif">Nuestro Catálogo</h2>
               <div className="h-1 w-12 bg-rose-300 mt-2"></div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 lg-gap-8">
-              {currentProducts.map(product => (
-                <ProductCard key={product.id} {...product} />
-              ))}
-            </div>
+            {loading ? (
+              <div className="py-20 text-center text-rose-400 animate-pulse font-serif">
+                Cargando dulzura...
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+                {products.map(product => (
+                  <ProductCard key={product.id} {...product} />
+                ))}
+              </div>
+            )}
 
             {totalPages > 1 && (
               <div className="mt-12 flex justify-center items-center gap-4">
@@ -136,7 +156,11 @@ const ProductList = () => {
                     <button
                       key={i}
                       onClick={() => setCurrentPage(i + 1)}
-                      className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${currentPage === i + 1 ? "bg-rose-400 text-white shadow-md" : "text-rose-400 hover:bg-rose-50"}`}
+                      className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${
+                        currentPage === i + 1
+                          ? "bg-rose-400 text-white shadow-md"
+                          : "text-rose-400 hover:bg-rose-50"
+                      }`}
                     >
                       {i + 1}
                     </button>
